@@ -477,10 +477,9 @@ function setupReturnSystem() {
             currency: $("return-currency").value,
             mandoubBonus: $("return-mandoub-bonus").value,
             mandoubDiscount: $("return-mandoub-discount").value,
-            mandoubEval: $("return-mandoub-eval").value,
             driverBonus: $("return-driver-bonus").value,
             driverDiscount: $("return-driver-discount").value,
-            driverEval: $("return-driver-eval").value,
+            netKm: $("return-net-km").value,
             date: new Date().toISOString()
         };
         if (!appData.returnInfos) appData.returnInfos = [];
@@ -501,7 +500,7 @@ function setupReturnSystem() {
         if (!list) return;
         list.innerHTML = (appData.returnInfos || []).map((r, i) => `
             <li style="justify-content: space-between; flex-wrap: wrap;">
-                <span>${r.tripName || "-"} | المندوب: ${r.mandoubBonus || 0}/${r.mandoubDiscount || 0}/${r.mandoubEval || "-"} | السائق: ${r.driverBonus || 0}/${r.driverDiscount || 0}/${r.driverEval || "-"}</span>
+                <span>${r.tripName || "-"} | المندوب: ${r.mandoubBonus || 0}/${r.mandoubDiscount || 0} | السائق: ${r.driverBonus || 0}/${r.driverDiscount || 0} | صافي كم: ${r.netKm || "-"}</span>
                 <div>
                     <button onclick="editReturn(${i})" class="glass-btn" style="padding:5px 10px; cursor:pointer; margin-right:5px;">تعديل</button>
                     <button onclick="deleteReturn(${i})" class="glass-btn" style="background:rgba(255,0,0,0.5) !important; padding:5px 10px; cursor:pointer;">حذف</button>
@@ -515,10 +514,9 @@ function setupReturnSystem() {
         $("return-currency").value = r.currency || "دينار";
         $("return-mandoub-bonus").value = r.mandoubBonus || "";
         $("return-mandoub-discount").value = r.mandoubDiscount || "";
-        $("return-mandoub-eval").value = r.mandoubEval || "ممتاز";
         $("return-driver-bonus").value = r.driverBonus || "";
         $("return-driver-discount").value = r.driverDiscount || "";
-        $("return-driver-eval").value = r.driverEval || "ممتاز";
+        if ($("return-net-km")) $("return-net-km").value = r.netKm || "";
         window.editReturnIndex = i;
         $("btn-save-return").textContent = "تحديث المعلومات";
     };
@@ -624,8 +622,8 @@ function setupReportsSystem() {
             thead.innerHTML = `<th>المستخدم</th><th>اسم الرحلة</th><th>نوع المصروف</th><th>عدد اللترات</th>`;
             (appData.userExpenses || []).forEach(e => tbody.innerHTML += `<tr>${wrapTd(e.user || "")}${wrapTd(e.tripName || "")}${wrapTd(e.type || "")}${wrapTd(e.liters || 0)}</tr>`);
         } else if (title === "تقرير مصرف الرحلة") {
-            thead.innerHTML = `<th>المستخدم</th><th>اسم الرحلة</th><th>المبلغ</th><th>النوع</th><th>التفاصيل</th><th>الصورة</th>`;
-            (appData.userExpenses || []).forEach(e => tbody.innerHTML += `<tr>${wrapTd(e.user || "")}${wrapTd(e.tripName || "")}${wrapTd((e.amount || 0) + " " + (e.currency || ""))}${wrapTd(e.type || "")}${wrapTd(e.notes || "")}${wrapTd(e.imgBase64 ? `<img src="${e.imgBase64}" class="clickable-image" onclick="openImage('${e.imgBase64}')">` : "لا يوجد")}</tr>`);
+            thead.innerHTML = `<th>المستخدم</th><th>اسم الرحلة</th><th>المبلغ</th><th>النوع</th><th>التاريخ</th><th>الصورة</th>`;
+            (appData.userExpenses || []).forEach(e => tbody.innerHTML += `<tr>${wrapTd(e.user || "")}${wrapTd(e.tripName || "")}${wrapTd((e.amount || 0) + " " + (e.currency || ""))}${wrapTd(e.type || "")}${wrapTd((e.date || "").split("T")[0] || "")}${wrapTd(e.imgBase64 ? `<img src="${e.imgBase64}" class="clickable-image" onclick="openImage('${e.imgBase64}')">` : "لا يوجد")}</tr>`);
         } else if (title === "تقرير أعطال الصيانة") {
             thead.innerHTML = `<th>المستخدم</th><th>اسم الرحلة</th><th>الباص</th><th>المبلغ</th><th>الخيار</th><th>التاريخ</th><th>الصورة</th>`;
             (appData.userBusExpenses || []).forEach(e => tbody.innerHTML += `<tr>${wrapTd(e.user || "")}${wrapTd(e.tripName || "")}${wrapTd(e.car || "")}${wrapTd((e.amount || 0) + " " + (e.currency || ""))}${wrapTd(e.opts || "")}${wrapTd(e.date || "")}${wrapTd(e.imgBase64 ? `<img src="${e.imgBase64}" class="clickable-image" onclick="openImage('${e.imgBase64}')">` : "لا يوجد")}</tr>`);
@@ -661,7 +659,6 @@ function setupReportsSystem() {
         document.body.removeChild(link);
     };
 }
-
 
 // === ADMIN WALLET CONTROL ===
 function addWallet(user,iqd,usd,sar){
