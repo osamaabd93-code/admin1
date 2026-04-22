@@ -574,8 +574,20 @@ function setupSaveButtons() {
 
         const driverRem = Number(financeData.driverRem) || 0;
         const manRem = Number(financeData.manRem) || 0;
+        const driverNameTrimmed = (financeData.driverName || "").trim();
+        const mandoubNameTrimmed = (financeData.mandoubName || "").trim();
+
+        const totalIncome = (appData.userIncomes || []).filter(i => {
+             const u = (i.user || "").trim();
+             return (driverNameTrimmed && u === driverNameTrimmed) || (mandoubNameTrimmed && u === mandoubNameTrimmed);
+        }).reduce((sum, i) => sum + (Number(i.amount) || 0), 0);
+        
         if (driverRem === 0 && manRem === 0 && appData.savedTrips) {
-            const activeTrip = appData.savedTrips.find(t => t.driver === financeData.driverName || t.mandoub === financeData.mandoubName);
+            const activeTrip = appData.savedTrips.find(t => {
+                 const td = (t.driver || "").trim();
+                 const tm = (t.mandoub || "").trim();
+                 return (td && td === driverNameTrimmed) || (tm && tm === mandoubNameTrimmed);
+            });
             if (activeTrip) activeTrip.status = "مكتملة";
         }
         $("finance-form").reset();
