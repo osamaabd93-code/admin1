@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام إدارة النقل والرحلات - الإدارة</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <div id="login-screen" class="screen-container glass-effect">
+        <div class="login-container glass-effect">
+            <i class="fas fa-user-tie login-logo"></i>
+            <h2>مرحباً بك في نظام الإدارة</h2>
+            <p>الرجاء إدخال بيانات الدخول</p>
+            <div id="admin-login-section">
+                <input type="password" id="admin-pass-input" placeholder="كلمة مرور الإدارة" class="login-input glass-input">
+                <button id="btn-login-admin" class="btn btn-primary glass-btn">
+                    <i class="fas fa-sign-in-alt"></i> دخول للإدارة
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="admin-app" class="screen-container hidden glass-effect">
+        <header class="top-header glass-header">
+            <h1>واجهة الإدارة</h1>
+            <div class="user-info btn-logout">
+                <i class="fas fa-sign-out-alt"></i> خروج
+            </div>
+        </header>
+
+        <main>
+            <section id="admin-trips" class="tab-content active">
+                <h2 class="glass-text">إنشاء رحلة جديدة</h2>
+                <form class="data-form glass-panel" id="trip-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>اسم الرحلة</label>
+                            <input type="text" id="trip-name" class="glass-input" placeholder="مثال: رحلة عمرة رجب">
+                        </div>
+                        <div class="form-group">
+                            <label>رقم الرحلة</label>
+                            <input type="text" id="trip-number" class="glass-input" placeholder="رقم الرحلة">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>تاريخ الرحلة</label>
+                            <input type="date" id="trip-date" class="glass-input">
+                        </div>
+                        <div class="form-group">
+                            <label>عدد الأيام</label>
+                            <input type="number" id="trip-days" class="glass-input">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>اسم المندوب</label>
+                            <input type="text" id="mandoub-select" list="mandoub-list" class="glass-input" placeholder="اختر أو اكتب اسم المندوب">
+                            <datalist id="mandoub-list"></datalist>
+                        </div>
+                        <div class="form-group">
+                            <label>اسم السائق الأول</label>
+                            <input type="text" id="driver-select" list="driver-list" class="glass-input" placeholder="اختر أو اكتب اسم السائق">
+                            <datalist id="driver-list"></datalist>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>اسم السائق الثاني</label>
+                            <input type="text" id="driver2-select" list="driver-list" class="glass-input" placeholder="اختر أو اكتب اسم السائق الثاني">
+                        </div>
+                        <div class="form-group">
+                            <label>الباص المستخدم</label>
+                            <select id="bus-select" class="glass-input"></select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>عدد باصات الرحلة</label>
+                            <input type="number" id="bus-count" value="1" class="glass-input">
+                        </div>
+                        <div class="form-group">
+                            <label>عدد الكيلومترات قبل الرحلة</label>
+                            <input type="number" id="trip-km-before" class="glass-input">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>عقد اتفاق بين الطرفين (إرفاق صورة)</label>
+                        <input type="file" accept="image/*" id="trip-file" class="glass-input">
+                        <input type="hidden" id="trip-file-base64">
+                    </div>
+                    <div class="form-group">
+                        <label>ملاحظات</label>
+                        <textarea id="trip-notes" rows="3" class="glass-input"></textarea>
+                    </div>
+                    <button type="button" id="btn-save-trip" class="btn btn-primary w-100 glass-btn">حفظ وإنشاء الرحلة</button>
+                </form>
+                <div id="saved-trips-container" style="margin-top: 20px;">
+                    <h3 class="section-title glass-text">الرحلات المحفوظة</h3>
+                    <ul class="reports-list" id="saved-trips-list"></ul>
+                </div>
+            </section>
+
+            <section id="admin-trip-info" class="tab-content">
+                <h2 class="glass-text">معلومات الرحلة الشاملة</h2>
+                <form class="data-form glass-panel" id="trip-info-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>العملة</label>
+                            <select id="ti-currency" class="glass-input"><option>دينار</option><option>دولار</option><option>ريال</option></select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>سعر شراء البرنامج الكلي</label>
+                            <div class="input-with-currency">
+                                <input type="number" id="ti-1" class="glass-input">
+                                <select class="glass-input"><option>دينار</option><option>دولار</option><option>ريال</option></select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>اجرة نقل الفرد</label>
+                            <div class="input-with-currency">
+                                <input type="number" id="ti-new1" class="glass-input">
+                                <select class="glass-input"><option>دينار</option><option>دولار</option><option>ريال</option></select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>السعر الكلي لغرف مكه</label>
+                            <div class="input-with-currency">
+                                <input type="number" id="ti-2" class="glass-input">
+                                <select class="glass-input"><option>دينار</option><option>دولار</option><option>ريال</option></select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>السعر الكلي لغرف المدينة</label>
+                            <div class="input-with-currency">
+                                <input type="number" id="ti-3" class="glass-input">
+                                <select class="glass-input"><option>دينار</option><option>دولار</option><option>ريال</option></select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>سعر العدد الكلي للتأشيرات</label>
+                            <div class="input-with-currency">
+                                <input type="number" id="ti-4" class="glass-input">
+                                <select class="glass-input"><option>دينار</option><option>دولار</option><option>ريال</option></select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>سعر التأشيرة الواحدة</label>
+                            <div class="input-with-currency">
+                                <input type="number" id="ti-5" class="glass-input">
+                                <select class="glass-input"><option>دينار</option><option>دولار</option><option>ريال</option></select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>مبلغ الهيئة الكلي</label>
+                            <div class="input-with-currency">
+                                <input type="number" id="ti-6" class="glass-input">
+                                <select class="glass-input"><option>دينار</option><option>دولار</option><option>ريال</option></select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>تسديد المبلغ في بغداد (العدد)</label>
+                            <div class="input-with-currency">
+                                <input type="number" id="ti-7" class="glass-input">
+                                <select class="glass-input"><option>دينار</option><option>دولار</option><option>ريال</option></select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>تسديد المبلغ في بغداد (المبلغ)</label>
+                            <div class="input-with-currency">
+                                <input type="number" id="ti-8" class="glass-input">
+                                <select class="glass-input"><option>دينار</option><option>دولار</option><option>ريال</option></select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>تسديد في الحدود (الاطفال)</label>
+                            <div class="input-with-currency">
+                                <input type="number" id="ti-9" class="glass-input">
+                                <select class="glass-input"><option>دينار</option><option>دولار</option><option>ريال</option></select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>تسديد في الحدود (المبلغ)</label>
+                            <div class="input-with-currency">
+                                <input type="number" id="ti-10" class="glass-input">
+                                <select class="glass-input"><option>دينار</option><option>دولار</option><option>ريال</option></select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>سعر الهدايا</label>
+                            <div class="input-with-currency">
+                                <input type="number" id="ti-11" class="glass-input">
+                                <select class="glass-input"><option>دينار</option><option>دولار</option><option>ريال</option></select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>عدد المعتمرين الكلي</label>
+                            <div class="input-with-currency">
+                                <input type="number" id="ti-12" class="glass-input">
+                                <select class="glass-input"><option>دينار</option><option>دولار</option><option>ريال</option></select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>عدد التأشيرات الكلية</label>
+                            <div class="input-with-currency">
+                                <input type="number" id="ti-13" class="glass-input">
+                                <select class="glass-input"><option>دينار</option><option>دولار</option><option>ريال</option></select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>عدد التأشيرات المجانية</label>
+                            <div class="input-with-currency">
+                                <input type="number" id="ti-14" class="glass-input">
+                                <select class="glass-input"><option>دينار</option><option>دولار</option><option>ريال</option></select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>مورد البرنامج</label>
+                            <input type="text" id="ti-15" class="glass-input">
+                        </div>
+                        <div class="form-group">
+                            <label>الانطلاقية</label>
+                            <input type="text" id="ti-16" class="glass-input">
+                        </div>
+                        <div class="form-group">
+                            <label>الوجهة</label>
+                            <input type="text" id="ti-17" class="glass-input">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>غرف مكة (العدد)</label>
+                            <input type="number" id="ti-18" class="glass-input">
+                        </div>
+                        <div class="form-group">
+                            <label>سعر الغرفة (مكة)</label>
+                            <input type="number" id="ti-19" class="glass-input">
+                        </div>
+                        <div class="form-group">
+                            <label>غرف المدينة (العدد)</label>
+                            <input type="number" id="ti-20" class="glass-input">
+                        </div>
+                        <div class="form-group">
+                            <label>سعر الغرفة (المدينة)</label>
+                            <input type="number" id="ti-21" class="glass-input">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>المبلغ الكلي للاقساط</label>
+                            <input type="number" id="ti-22" class="glass-input">
+                        </div>
+                        <div class="form-group">
+                            <label>مبلغ القسط للشخص الواحد</label>
+                            <input type="number" id="ti-new2" class="glass-input">
+                        </div>
+                        <div class="form-group">
+                            <label>عدد الاقساط الكلية</label>
+                            <input type="number" id="ti-23" class="glass-input">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>سعر الرحلة</label>
+                            <input type="number" id="ti-24" class="glass-input">
+                        </div>
+                        <div class="form-group">
+                            <label>أجرة الباص الكلية</label>
+                            <input type="number" id="ti-25" class="glass-input">
+                        </div>
+                        <div class="form-group">
+                            <label>المبلغ الكلي الوارد</label>
+                            <input type="number" id="ti-26" class="glass-input">
+                        </div>
+                        <div class="form-group">
+                            <label>المبلغ الكلي الصادر</label>
+                            <input type="number" id="ti-27" class="glass-input">
+                        </div>
+                    </div>
+                    <button type="button" id="btn-save-trip-info" class="btn btn-primary w-100 glass-btn">حفظ المعلومات</button>
+                </form>
+                <div id="saved-trip-infos-container" style="margin-top: 20px;">
+                    <h3 class="section-title glass-text">المعاملات المحفوظة</h3>
+                    <ul class="reports-list" id="saved-trip-infos-list"></ul>
+                </div>
+            </section>
+
+            <section id="admin-tasks" class="tab-content">
+                <h2 class="glass-text">المهمات</h2>
+                <form class="data-form glass-panel" id="tasks-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>اسم الرحلة</label>
+                            <select id="task-trip-name" class="glass-input"></select>
+                        </div>
+                        <div class="form-group">
+                            <label>اختيار اما سائق او مندوب</label>
+                            <select id="task-role" class="glass-input">
+                                <option value="سائق">سائق</option>
+                                <option value="مندوب">مندوب</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>الاسم</label>
+                            <select id="task-person-name" class="glass-input"></select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>المهمة</label>
+                            <input type="text" id="task-text" class="glass-input">
+                        </div>
+                        <div class="form-group">
+                            <label>حالة المهمة</label>
+                            <select id="task-status" class="glass-input">
+                                <option>جديدة</option>
+                                <option>قيد التنفيذ</option>
+                                <option>منجزة</option>
+                                <option>ملغية</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>الملاحظات</label>
+                        <textarea id="task-notes" rows="3" class="glass-input"></textarea>
+                    </div>
+                    <button type="button" id="btn-save-task" class="btn btn-primary w-100 glass-btn">حفظ المهمة</button>
+                </form>
+                <div style="margin-top:20px;">
+                    <h3 class="section-title glass-text">المهمات المحفوظة</h3>
+                    <ul class="reports-list" id="tasks-list"></ul>
+                </div>
+            </section>
+
+            <section id="admin-return" class="tab-content">
+                <h2 class="glass-text">معلومات بعد العودة</h2>
+                <form class="data-form glass-panel" id="return-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>اسم الرحلة</label>
+                            <select id="return-trip-name" class="glass-input"></select>
+                        </div>
+                        <div class="form-group">
+                            <label>العملة</label>
+                            <select id="return-currency" class="glass-input"><option>دينار</option><option>دولار</option><option>ريال</option></select>
+                        </div>
+                    </div>
+                    <h3 class="section-title glass-text">بيانات المندوب</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>حوافز واكراميات لهذه الرحلة</label>
+                            <input type="number" id="return-mandoub-bonus" class="glass-input">
+                        </div>
+                        <div class="form-group">
+                            <label>خصم لهذه الرحلة</label>
+                            <input type="number" id="return-mandoub-discount" class="glass-input">
+                        </div>
+                    </div>
+                    <h3 class="section-title glass-text">بيانات السائق</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>حوافز واكراميات لهذه الرحلة</label>
+                            <input type="number" id="return-driver-bonus" class="glass-input">
+                        </div>
+                        <div class="form-group">
+                            <label>خصم لهذه الرحلة</label>
+                            <input type="number" id="return-driver-discount" class="glass-input">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>عدد كيلو مترات الصافي</label>
+                        <input type="number" id="return-net-km" class="glass-input">
+                    </div>
+                    <button type="button" id="btn-save-return" class="btn btn-primary w-100 glass-btn">حفظ المعلومات</button>
+                </form>
+                <div style="margin-top:20px;">
+                    <h3 class="section-title glass-text">السجلات المحفوظة</h3>
+                    <ul class="reports-list" id="return-list"></ul>
+                </div>
+            </section>
+
+            <section id="admin-finance" class="tab-content">
+                <h2 class="glass-text">المالية والعهد</h2>
+                <form class="data-form glass-panel" id="finance-form">
+                    <div class="form-group">
+                        <label>العملة</label>
+                        <select id="finance-currency" class="glass-input"><option>دينار</option><option>دولار</option><option>ريال</option></select>
+                    </div>
+
+                    <h3 class="section-title glass-text">صندوق الباص</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>نوع الباص</label>
+                            <select id="finance-bus-type" class="glass-input"></select>
+                        </div>
+                        <div class="form-group">
+                            <label>أجرة الباص</label>
+                            <input type="number" id="finance-bus-fare" class="glass-input">
+                        </div>
+                    </div>
+
+                    <h3 class="section-title glass-text">بيانات السائق</h3>
+                    <div class="form-row">
+                        <div class="form-group"><label>اسم السائق</label><select id="finance-driver-name" class="glass-input"></select></div>
+                        <div class="form-group"><label>مبلغ الدين السابق للسائق</label><input type="number" id="finance-driver-debt" class="glass-input"></div>
+                        <div class="form-group"><label>سلفة اضافية عاجله للسائق</label><input type="number" id="finance-driver-advance" class="glass-input"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>سلفة السائق (دينار)</label><input type="number" id="finance-driver-loan-iqd" class="glass-input"></div>
+                        <div class="form-group"><label>سلفة السائق (دولار)</label><input type="number" id="finance-driver-loan-usd" class="glass-input"></div>
+                        <div class="form-group"><label>سلفة السائق (ريال)</label><input type="number" id="finance-driver-loan-sar" class="glass-input"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>الأجرة الكلية</label><input type="number" id="driver-total" class="glass-input"></div>
+                        <div class="form-group"><label>المبلغ الواصل</label><input type="number" id="driver-paid" class="glass-input"></div>
+                        <div class="form-group"><label>المبلغ المتبقي</label><input type="number" id="driver-rem" readonly class="glass-input bg-light"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>تقييم السائق للرحلة</label>
+                            <select id="finance-driver-eval" class="glass-input"><option>ممتاز</option><option>جيد جداً</option><option>جيد</option><option>مقبول</option><option>ضعيف</option></select>
+                        </div>
+                    </div>
+
+                    <h3 class="section-title glass-text">بيانات المندوب</h3>
+                    <div class="form-row">
+                        <div class="form-group"><label>اسم المندوب</label><select id="finance-mandoub-name" class="glass-input"></select></div>
+                        <div class="form-group"><label>سلفة اضافية عاجله للمندوب</label><input type="number" id="finance-mandoub-advance" class="glass-input"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>سلفة المندوب (دينار)</label><input type="number" id="finance-mandoub-loan-iqd" class="glass-input"></div>
+                        <div class="form-group"><label>سلفة المندوب (دولار)</label><input type="number" id="finance-mandoub-loan-usd" class="glass-input"></div>
+                        <div class="form-group"><label>سلفة المندوب (ريال)</label><input type="number" id="finance-mandoub-loan-sar" class="glass-input"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>الأجرة الكلية</label><input type="number" id="man-total" class="glass-input"></div>
+                        <div class="form-group"><label>المبلغ الواصل</label><input type="number" id="man-paid" class="glass-input"></div>
+                        <div class="form-group"><label>المبلغ المتبقي</label><input type="number" id="man-rem" readonly class="glass-input bg-light"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>تقييم المندوب</label>
+                            <select id="mandoub-eval-select" class="glass-input"><option>ممتاز</option><option>جيد جداً</option><option>جيد</option><option>مقبول</option><option>ضعيف</option></select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>السبب (يظهر للمندوب)</label>
+                        <input type="text" id="mandoub-eval-reason" placeholder="اذكر سبب التقييم" class="glass-input">
+                    </div>
+
+                    <button type="button" id="btn-save-finance" class="btn btn-primary w-100 glass-btn">حفظ المالية</button>
+                </form>
+            </section>
+
+            <section id="admin-funds" class="tab-content">
+                <h2 class="glass-text">الصناديق المالية</h2>
+                <h3 class="section-title glass-text">صندوق النقل العام</h3>
+                <div class="stats-grid" id="buses-funds-grid"></div>
+                <h3 class="section-title glass-text">صناديق أخرى</h3>
+                <div class="stats-grid">
+                    <div class="stat-card special-fund glass-panel">
+                        <i class="fas fa-bus-alt"></i>
+                        <h4>صندوق النقل العام</h4>
+                        <div class="fund-details glass-inner">
+                            <span>وارد: <span id="public-trans-in">0</span></span> | <span>صادر: <span id="public-trans-out">0</span></span> | <span>تحويل: 0</span>
+                        </div>
+                    </div>
+                    <div class="stat-card special-fund glass-panel">
+                        <i class="fas fa-kaaba"></i>
+                        <h4>صندوق العمرة</h4>
+                        <div class="fund-details glass-inner">
+                            <span>وارد: <span id="umrah-trans-in">0</span></span> | <span>صادر: <span id="umrah-trans-out">0</span></span> | <span>تحويل: 0</span>
+                        </div>
+                    </div>
+                    <div class="stat-card special-fund glass-panel">
+                        <i class="fas fa-chart-line"></i>
+                        <h4>صندوق الأرباح</h4>
+                        <div class="fund-details glass-inner">
+                            <span>وارد: <span id="profit-in">0</span></span> | <span>صادر: <span id="profit-out">0</span></span> | <span>تحويل: 0</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="admin-reports" class="tab-content">
+                <h2 class="glass-text">التقارير الشاملة</h2>
+                <ul class="reports-list glass-list" id="reports-main-list">
+                    <li onclick="showReport('تقرير عدد السفرات الكلية للمندوب والسائق والباص')" style="cursor: pointer;"><i class="fas fa-route"></i> تقرير عدد السفرات الكلية للمندوب والسائق والباص</li>
+                    <li onclick="showReport('اجمالي مدة بقاء السفر')" style="cursor: pointer;"><i class="fas fa-calendar-check"></i> اجمالي مدة بقاء السفر</li>
+                    <li onclick="showReport('المبلغ الكلي للحوافز والاكراميات والخصومات سائق ومندوب')" style="cursor: pointer;"><i class="fas fa-money-bill-wave"></i> المبلغ الكلي للحوافز والاكراميات والخصومات سائق ومندوب</li>
+                    <li onclick="showReport('اجمالي ايرادات المندوب والسائق')" style="cursor: pointer;"><i class="fas fa-wallet"></i> اجمالي ايرادات المندوب والسائق</li>
+                    <li onclick="showReport('عدد ايام البقاء اثناء الرحلة')" style="cursor: pointer;"><i class="fas fa-clock"></i> عدد ايام البقاء اثناء الرحلة</li>
+                    <li onclick="showReport('عدد الكيلومترات الصافي للسيارة')" style="cursor: pointer;"><i class="fas fa-gauge-high"></i> عدد الكيلومترات الصافي للسيارة</li>
+                    <li onclick="showReport('عدد اللترات المصروفة بالعراق')" style="cursor: pointer;"><i class="fas fa-gas-pump"></i> عدد اللترات المصروفة بالعراق</li>
+                    <li onclick="showReport('تقرير مصرف الرحلة')" style="cursor: pointer;"><i class="fas fa-file-alt"></i> تقرير مصرف الرحلة</li>
+                    <li onclick="showReport('تقرير أعطال الصيانة')" style="cursor: pointer;"><i class="fas fa-tools"></i> تقرير أعطال الصيانة</li>
+                </ul>
+
+                <div id="report-viewer" class="hidden" style="margin-top: 20px;">
+                    <button onclick="hideReport()" class="btn btn-secondary glass-btn" style="margin-bottom: 15px;">رجوع للقائمة</button>
+                    <h3 id="report-title" class="section-title glass-text"></h3>
+                    <div class="form-row" style="margin-bottom: 15px;">
+                        <div class="form-group" style="flex: 2;">
+                            <input type="text" id="report-search-input" placeholder="بحث..." class="glass-input">
+                        </div>
+                        <button type="button" onclick="searchReport()" class="btn btn-primary glass-btn" style="flex: 1;">بحث</button>
+                        <button type="button" onclick="exportReportExcel()" class="btn btn-secondary glass-btn" style="flex: 1; background-color: rgba(16, 185, 129, 0.5);">تصدير ملف اكسل</button>
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table id="report-table" class="glass-table" style="width: 100%; border-collapse: collapse; text-align: right; border-radius: 8px; overflow: hidden;">
+                            <thead>
+                                <tr id="report-table-head" style="background: rgba(255,255,255,0.2);"></tr>
+                            </thead>
+                            <tbody id="report-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section id="admin-settings" class="tab-content">
+                <h2 class="glass-text">إنشاء يوزر وإعدادات النظام</h2>
+                <h3 class="section-title glass-text">إنشاء مستخدم (سائق أو مندوب)</h3>
+                <form class="data-form glass-panel">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>اسم الشخص</label>
+                            <input type="text" id="new-user-name" class="glass-input">
+                        </div>
+                        <div class="form-group">
+                            <label>كلمة السر</label>
+                            <input type="text" id="new-user-pass" class="glass-input">
+                        </div>
+                    </div>
+                    <button type="button" id="btn-save-new-user" class="btn btn-primary w-100 glass-btn">حفظ المستخدم</button>
+                    <ul class="reports-list glass-list" id="users-list" style="margin-top: 15px;"></ul>
+                </form>
+
+                <h3 class="section-title glass-text">إعدادات أسماء المندوبين</h3>
+                <form class="data-form glass-panel">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <input type="text" id="new-mandoub-name-input" placeholder="اكتب اسم مندوب جديد" class="glass-input">
+                        </div>
+                        <button type="button" id="btn-add-mandoub" class="btn btn-primary glass-btn">إضافة</button>
+                    </div>
+                    <ul class="reports-list glass-list" id="mandoubs-settings-list" style="margin-top: 15px;"></ul>
+                </form>
+
+                <h3 class="section-title glass-text">إعدادات أسماء السائقين</h3>
+                <form class="data-form glass-panel">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <input type="text" id="new-driver-name-input" placeholder="اكتب اسم سائق جديد" class="glass-input">
+                        </div>
+                        <button type="button" id="btn-add-driver" class="btn btn-primary glass-btn">إضافة</button>
+                    </div>
+                    <ul class="reports-list glass-list" id="drivers-settings-list" style="margin-top: 15px;"></ul>
+                </form>
+
+                <h3 class="section-title glass-text">إعدادات الباصات</h3>
+                <form class="data-form glass-panel">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <input type="text" id="new-bus-input" placeholder="اكتب اسم باص جديد" class="glass-input">
+                        </div>
+                        <button type="button" id="btn-add-bus" class="btn btn-primary glass-btn">إضافة</button>
+                    </div>
+                    <ul class="reports-list glass-list" id="bus-settings-list" style="margin-top: 15px;"></ul>
+                </form>
+
+                <h3 class="section-title glass-text">إعدادات أنواع المصاريف</h3>
+                <form class="data-form glass-panel">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <input type="text" id="new-exp-type-input" placeholder="اكتب نوع مصروف جديد" class="glass-input">
+                        </div>
+                        <button type="button" id="btn-add-exp-type" class="btn btn-primary glass-btn">إضافة</button>
+                    </div>
+                    <ul class="reports-list glass-list" id="exp-types-list"></ul>
+                </form>
+
+                <h3 class="section-title glass-text">إعدادات خيارات مصاريف الباصات</h3>
+                <form class="data-form glass-panel">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <input type="text" id="new-bus-opt-input" placeholder="اكتب خيار جديد" class="glass-input">
+                        </div>
+                        <button type="button" id="btn-add-bus-opt" class="btn btn-primary glass-btn">إضافة</button>
+                    </div>
+                    <ul class="reports-list glass-list" id="bus-opts-list"></ul>
+                </form>
+            </section>
+        </main>
+
+        <nav class="bottom-nav glass-nav">
+            <a href="#" class="nav-item active" data-target="admin-trips" data-role="admin"><i class="fas fa-plus-circle"></i><span>الرحلات</span></a>
+            <a href="#" class="nav-item" data-target="admin-trip-info" data-role="admin"><i class="fas fa-info-circle"></i><span>معلومات</span></a>
+            <a href="#" class="nav-item" data-target="admin-tasks" data-role="admin"><i class="fas fa-list-check"></i><span>المهمات</span></a>
+            <a href="#" class="nav-item" data-target="admin-return" data-role="admin"><i class="fas fa-rotate-left"></i><span>بعد العودة</span></a>
+            <a href="#" class="nav-item" data-target="admin-finance" data-role="admin"><i class="fas fa-money-bill-wave"></i><span>المالية</span></a>
+            <a href="#" class="nav-item" data-target="admin-funds" data-role="admin"><i class="fas fa-boxes"></i><span>الصناديق</span></a>
+            <a href="#" class="nav-item" data-target="admin-reports" data-role="admin"><i class="fas fa-chart-pie"></i><span>التقارير</span></a>
+            <a href="#" class="nav-item" data-target="admin-settings" data-role="admin"><i class="fas fa-cogs"></i><span>إعدادات</span></a>
+        </nav>
+    </div>
+
+    <div id="image-modal" class="modal hidden glass-modal">
+        <span class="close-modal">&times;</span>
+        <img class="modal-content" id="modal-img">
+    </div>
+
+    <div id="custom-alert-container" class="custom-alert-container"></div>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>
