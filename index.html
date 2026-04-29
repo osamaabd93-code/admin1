@@ -6,6 +6,7 @@
     <title>نظام إدارة النقل والرحلات - الإدارة</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
 
@@ -297,7 +298,10 @@
                     <button type="button" id="btn-save-trip-info" class="btn btn-primary w-100 glass-btn">حفظ المعلومات</button>
                 </form>
                 <div id="saved-trip-infos-container" style="margin-top: 20px;">
-                    <h3 class="section-title glass-text">المعاملات المحفوظة</h3>
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid rgba(255, 255, 255, 0.3); padding-bottom: 5px; margin: 20px 0 10px;">
+                        <h3 class="glass-text" style="margin: 0; border: none;">المعاملات المحفوظة</h3>
+                        <button type="button" onclick="exportArrayToExcel('savedTripsInfo', 'معلومات_الرحلة')" class="btn btn-secondary glass-btn" style="width: auto; padding: 5px 15px; margin: 0; background-color: rgba(16, 185, 129, 0.5);">تصدير إكسل</button>
+                    </div>
                     <ul class="reports-list" id="saved-trip-infos-list"></ul>
                 </div>
             </section>
@@ -391,7 +395,10 @@
                     <button type="button" id="btn-save-return" class="btn btn-primary w-100 glass-btn">حفظ المعلومات</button>
                 </form>
                 <div style="margin-top:20px;">
-                    <h3 class="section-title glass-text">السجلات المحفوظة</h3>
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid rgba(255, 255, 255, 0.3); padding-bottom: 5px; margin: 20px 0 10px;">
+                        <h3 class="glass-text" style="margin: 0; border: none;">السجلات المحفوظة</h3>
+                        <button type="button" onclick="exportArrayToExcel('returnInfos', 'بعد_العودة')" class="btn btn-secondary glass-btn" style="width: auto; padding: 5px 15px; margin: 0; background-color: rgba(16, 185, 129, 0.5);">تصدير إكسل</button>
+                    </div>
                     <ul class="reports-list" id="return-list"></ul>
                 </div>
             </section>
@@ -467,33 +474,41 @@
 
                     <button type="button" id="btn-save-finance" class="btn btn-primary w-100 glass-btn">حفظ المالية</button>
                 </form>
+
+                <div style="margin-top:20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid rgba(255, 255, 255, 0.3); padding-bottom: 5px; margin: 20px 0 10px;">
+                        <h3 class="glass-text" style="margin: 0; border: none;">السجلات المالية المحفوظة</h3>
+                        <button type="button" onclick="exportArrayToExcel('finances', 'المالية_والعهد')" class="btn btn-secondary glass-btn" style="width: auto; padding: 5px 15px; margin: 0; background-color: rgba(16, 185, 129, 0.5);">تصدير إكسل</button>
+                    </div>
+                    <ul class="reports-list" id="finance-list"></ul>
+                </div>
             </section>
 
             <section id="admin-funds" class="tab-content">
                 <h2 class="glass-text">الصناديق المالية</h2>
-                <h3 class="section-title glass-text">صندوق النقل العام</h3>
+                <h3 class="section-title glass-text">صندوق النقل العام (لكل باص)</h3>
                 <div class="stats-grid" id="buses-funds-grid"></div>
                 <h3 class="section-title glass-text">صناديق أخرى</h3>
                 <div class="stats-grid">
                     <div class="stat-card special-fund glass-panel">
                         <i class="fas fa-bus-alt"></i>
-                        <h4>صندوق النقل العام</h4>
+                        <h4>صندوق النقل العام (الكلي)</h4>
                         <div class="fund-details glass-inner">
-                            <span>وارد: <span id="public-trans-in">0</span></span> | <span>صادر: <span id="public-trans-out">0</span></span> | <span>تحويل: 0</span>
+                            <span>وارد: <span id="public-trans-in">0</span></span> | <span>صادر: <span id="public-trans-out">0</span></span>
                         </div>
                     </div>
                     <div class="stat-card special-fund glass-panel">
                         <i class="fas fa-kaaba"></i>
                         <h4>صندوق العمرة</h4>
                         <div class="fund-details glass-inner">
-                            <span>وارد: <span id="umrah-trans-in">0</span></span> | <span>صادر: <span id="umrah-trans-out">0</span></span> | <span>تحويل: 0</span>
+                            <span>وارد: <span id="umrah-trans-in">0</span></span> | <span>صادر: <span id="umrah-trans-out">0</span></span>
                         </div>
                     </div>
                     <div class="stat-card special-fund glass-panel">
                         <i class="fas fa-chart-line"></i>
-                        <h4>صندوق الأرباح</h4>
+                        <h4>صندوق الأرباح (الإجمالي)</h4>
                         <div class="fund-details glass-inner">
-                            <span>وارد: <span id="profit-in">0</span></span> | <span>صادر: <span id="profit-out">0</span></span> | <span>تحويل: 0</span>
+                            <span>وارد: <span id="profit-in">0</span></span> | <span>صادر: <span id="profit-out">0</span></span>
                         </div>
                     </div>
                 </div>
@@ -522,6 +537,7 @@
                         </div>
                         <button type="button" onclick="searchReport()" class="btn btn-primary glass-btn" style="flex: 1;">بحث</button>
                         <button type="button" onclick="exportReportExcel()" class="btn btn-secondary glass-btn" style="flex: 1; background-color: rgba(16, 185, 129, 0.5);">تصدير ملف اكسل</button>
+                        <button type="button" onclick="exportReportPDF()" class="btn btn-danger glass-btn" style="flex: 1; background-color: rgba(220, 38, 38, 0.7);">تصدير ملف PDF</button>
                     </div>
                     <div style="overflow-x: auto;">
                         <table id="report-table" class="glass-table" style="width: 100%; border-collapse: collapse; text-align: right; border-radius: 8px; overflow: hidden;">
