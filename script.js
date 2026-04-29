@@ -31,6 +31,26 @@ window.showCustomAlert = (message) => {
     setTimeout(() => { if (container.contains(alertDiv)) container.removeChild(alertDiv); }, 3000);
 };
 
+// دالة تصدير إكسل مركزية للمصفوفات
+window.exportArrayToExcel = (arrayName, filename) => {
+    const data = appData[arrayName] || [];
+    if (data.length === 0) { showCustomAlert("لا توجد بيانات للتصدير"); return; }
+    
+    // إزالة حقول الصور لعدم إفساد ملف الـ CSV
+    const keys = Object.keys(data[0]).filter(k => !k.toLowerCase().includes('base64'));
+    let csv = "\uFEFF" + keys.join(",") + "\n";
+    data.forEach(item => {
+        csv += keys.map(k => `"${String(item[k] || "").replace(/"/g, '""')}"`).join(",") + "\n";
+    });
+    
+    const link = document.createElement("a");
+    link.href = encodeURI("data:text/csv;charset=utf-8," + csv);
+    link.download = filename + ".csv";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
+
 async function compressImageAndConvertToBase64(file) {
     return new Promise((resolve, reject) => {
         if (!file) { resolve(""); return; }
@@ -77,12 +97,13 @@ function listenToDB() {
 
 function refreshAllUI() {
     populateSelects();
-    generateBusFunds();
+    generateBusFunds(); // تحديث الصناديق لتصبح ديناميكية
     renderLists();
     renderTrips();
     renderTripInfos();
     renderTasks();
     renderReturns();
+    if(window.renderFinances) window.renderFinances(); // تحديث قائمة المالية
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -186,19 +207,63 @@ function updateTaskPersonOptions() {
     select.innerHTML = `<option value="">اختر الاسم</option>` + arr.map(n => `<option value="${n}">${n}</option>`).join("");
 }
 
+// برمجة الصناديق ديناميكياً للعمل التلقائي بناءً على المدخلات
 function generateBusFunds() {
     const grid = $("buses-funds-grid");
     if (!grid) return;
-    grid.innerHTML = "";
-    (appData.buses || []).forEach(bus => {
-        const fund = (appData.busFunds && appData.busFunds[bus]) ? appData.busFunds[bus] : { in: 0, out: 0, trans: 0 };
-        grid.innerHTML += `
+    
+    let dynamicBusFunds = {};
+    (appData.buses || []).forEach(bus => dynamicBusFunds[bus] = { in: 0, out: 0, trans: 0 });
+    
+    let totalPublicTransIn = 0;
+    let totalPublicTransOut = 0;
+    
+    (appData.finances || []).forEach(f => {
+        if (f.busType) {
+            if (!dynamicBusFunds[f.busType]) dynamicBusFunds[f.busType] = { in: 0, out: 0, trans: 0 };
+            dynamicBusFunds[f.busType].in += Number(f.busFare) || 0;
+            totalPublicTransIn += Number(f.busFare) || 0;
+        }
+    });
+    
+    (appData.userBusExpenses || []).forEach(e => {
+        if (e.car) {
+            if (!dynamicBusFunds[e.car]) dynamicBusFunds[e.car] = { in: 0, out: 0, trans: 0 };
+            dynamicBusFunds[e.car].out += Number(e.amount) || 0;
+            totalPublicTransOut += Number(e.amount) || 0;
+        }
+    });
+
+    grid.innerHTML = (appData.buses || []).map(bus => {
+        const fund = dynamicBusFunds[bus] || { in: 0, out: 0, trans: 0 };
+        return `
             <div class="stat-card glass-panel">
                 <i class="fas fa-bus" style="color: #60a5fa; font-size: 1.5rem;"></i>
                 <h4 class="glass-text" style="font-size: 0.9rem; margin: 5px 0;">${bus}</h4>
-                <div class="fund-details glass-inner"><span>و: ${fund.in || 0}</span> | <span>ص: ${fund.out || 0}</span> | <span>ت: ${fund.trans || 0}</span></div>
+                <div class="fund-details glass-inner"><span>و: ${fund.in}</span> | <span>ص: ${fund.out}</span></div>
             </div>`;
+    }).join("");
+    
+    let umrahIn = 0, umrahOut = 0;
+    (appData.savedTripsInfo || []).forEach(info => {
+        umrahIn += Number(info.val26) || 0; 
+        umrahOut += Number(info.val27) || 0; 
     });
+    
+    if ($("public-trans-in")) $("public-trans-in").textContent = totalPublicTransIn;
+    if ($("public-trans-out")) $("public-trans-out").textContent = totalPublicTransOut;
+    
+    if ($("umrah-trans-in")) $("umrah-trans-in").textContent = umrahIn;
+    if ($("umrah-trans-out")) $("umrah-trans-out").textContent = umrahOut;
+    
+    let profitIn = totalPublicTransIn + umrahIn;
+    (appData.userIncomes || []).forEach(i => profitIn += Number(i.amount) || 0);
+
+    let profitOut = totalPublicTransOut + umrahOut;
+    (appData.userExpenses || []).forEach(e => profitOut += Number(e.amount) || 0);
+
+    if ($("profit-in")) $("profit-in").textContent = profitIn;
+    if ($("profit-out")) $("profit-out").textContent = profitOut;
 }
 
 function setupCalculationsAndInteractions() {
@@ -530,14 +595,60 @@ function setupReturnSystem() {
 }
 
 function setupSaveButtons() {
+    // وظائف قائمة عرض المالية (تعديل وحذف)
+    window.renderFinances = () => {
+        const list = $("finance-list");
+        if (!list) return;
+        list.innerHTML = (appData.finances || []).map((f, i) => `
+            <li style="justify-content: space-between; flex-wrap: wrap;">
+                <span>${(f.date || "").split("T")[0] || "-"} | باص: ${f.busType || "-"} | سائق: ${f.driverName || "-"} | مندوب: ${f.mandoubName || "-"}</span>
+                <div>
+                    <button onclick="editFinance(${i})" class="glass-btn" style="padding:5px 10px; cursor:pointer; margin-right:5px;">تعديل</button>
+                    <button onclick="deleteFinance(${i})" class="glass-btn" style="background:rgba(255,0,0,0.5) !important; padding:5px 10px; cursor:pointer;">حذف</button>
+                </div>
+            </li>`).join("");
+    };
+
+    window.editFinance = (i) => {
+        const f = appData.finances[i];
+        $("finance-currency").value = f.currency || "دينار";
+        $("finance-bus-type").value = f.busType || "";
+        $("finance-bus-fare").value = f.busFare || "";
+        $("finance-driver-name").value = f.driverName || "";
+        $("finance-driver-debt").value = f.driverDebt || "";
+        $("finance-driver-advance").value = f.driverAdvance || "";
+        $("finance-driver-loan-iqd").value = f.driverLoanIQD || "";
+        $("finance-driver-loan-usd").value = f.driverLoanUSD || "";
+        $("finance-driver-loan-sar").value = f.driverLoanSAR || "";
+        $("driver-total").value = f.driverTotal || "";
+        $("driver-paid").value = f.driverPaid || "";
+        $("driver-rem").value = f.driverRem || "";
+        $("finance-driver-eval").value = f.driverEval || "ممتاز";
+        $("finance-mandoub-name").value = f.mandoubName || "";
+        $("finance-mandoub-advance").value = f.mandoubAdvance || "";
+        $("finance-mandoub-loan-iqd").value = f.mandoubLoanIQD || "";
+        $("finance-mandoub-loan-usd").value = f.mandoubLoanUSD || "";
+        $("finance-mandoub-loan-sar").value = f.mandoubLoanSAR || "";
+        $("man-total").value = f.manTotal || "";
+        $("man-paid").value = f.manPaid || "";
+        $("man-rem").value = f.manRem || "";
+        $("mandoub-eval-select").value = f.mandoubEval || "ممتاز";
+        $("mandoub-eval-reason").value = f.mandoubEvalReason || "";
+        
+        window.editFinanceIndex = i;
+        $("btn-save-finance").textContent = "تحديث المالية";
+    };
+
+    window.deleteFinance = (i) => {
+        if (confirm("هل أنت متأكد من حذف هذا السجل المالي؟")) {
+            appData.finances.splice(i, 1);
+            saveToDB();
+        }
+    };
+
     $("btn-save-finance").addEventListener("click", () => {
         const busType = $("finance-bus-type").value;
         const busFare = Number($("finance-bus-fare").value) || 0;
-        if (busType && busFare > 0) {
-            if (!appData.busFunds) appData.busFunds = {};
-            if (!appData.busFunds[busType]) appData.busFunds[busType] = { in: 0, out: 0, trans: 0 };
-            appData.busFunds[busType].in += busFare;
-        }
 
         const financeData = {
             currency: $("finance-currency").value,
@@ -567,17 +678,20 @@ function setupSaveButtons() {
         };
 
         if (!appData.finances) appData.finances = [];
-        appData.finances.push(financeData);
+        
+        if (window.editFinanceIndex != null) {
+            financeData.date = appData.finances[window.editFinanceIndex].date || financeData.date;
+            appData.finances[window.editFinanceIndex] = financeData;
+            window.editFinanceIndex = null;
+            $("btn-save-finance").textContent = "حفظ المالية";
+        } else {
+            appData.finances.push(financeData);
+        }
 
         const driverRem = Number(financeData.driverRem) || 0;
         const manRem = Number(financeData.manRem) || 0;
         const driverNameTrimmed = (financeData.driverName || "").trim();
         const mandoubNameTrimmed = (financeData.mandoubName || "").trim();
-
-        const totalIncome = (appData.userIncomes || []).filter(i => {
-             const u = (i.user || "").trim();
-             return (driverNameTrimmed && u === driverNameTrimmed) || (mandoubNameTrimmed && u === mandoubNameTrimmed);
-        }).reduce((sum, i) => sum + (Number(i.amount) || 0), 0);
         
         if (driverRem === 0 && manRem === 0 && appData.savedTrips) {
             const activeTrip = appData.savedTrips.find(t => {
@@ -605,20 +719,23 @@ function setupReportsSystem() {
         thead.innerHTML = "";
 
         if (title === "تقرير عدد السفرات الكلية للمندوب والسائق والباص") {
-            thead.innerHTML = `<th>اسم الرحلة</th><th>المندوب</th><th>السائق</th><th>الباص</th><th>الحالة</th>`;
-            (appData.savedTrips || []).forEach(t => tbody.innerHTML += `<tr>${wrapTd(t.name || "")}${wrapTd(t.mandoub || "")}${wrapTd(t.driver || "")}${wrapTd(t.bus || "")}${wrapTd(t.status || "")}</tr>`);
+            thead.innerHTML = `<th>تاريخ الرحلة</th><th>اسم الرحلة</th><th>المندوب</th><th>السائق</th><th>الباص</th><th>الحالة</th>`;
+            (appData.savedTrips || []).forEach(t => tbody.innerHTML += `<tr>${wrapTd(t.date || "")}${wrapTd(t.name || "")}${wrapTd(t.mandoub || "")}${wrapTd(t.driver || "")}${wrapTd(t.bus || "")}${wrapTd(t.status || "")}</tr>`);
         } else if (title === "اجمالي مدة بقاء السفر") {
             thead.innerHTML = `<th>اسم الرحلة</th><th>عدد الأيام</th>`;
             (appData.savedTrips || []).forEach(t => tbody.innerHTML += `<tr>${wrapTd(t.name || "")}${wrapTd(t.days || 0)}</tr>`);
         } else if (title === "المبلغ الكلي للحوافز والاكراميات والخصومات سائق ومندوب") {
-            thead.innerHTML = `<th>اسم الرحلة</th><th>حوافز المندوب</th><th>خصم المندوب</th><th>حوافز السائق</th><th>خصم السائق</th>`;
-            (appData.returnInfos || []).forEach(r => tbody.innerHTML += `<tr>${wrapTd(r.tripName || "")}${wrapTd(r.mandoubBonus || 0)}${wrapTd(r.mandoubDiscount || 0)}${wrapTd(r.driverBonus || 0)}${wrapTd(r.driverDiscount || 0)}</tr>`);
+            thead.innerHTML = `<th>اسم الرحلة</th><th>اسم المندوب</th><th>حوافز المندوب</th><th>خصم المندوب</th><th>اسم السائق</th><th>حوافز السائق</th><th>خصم السائق</th>`;
+            (appData.returnInfos || []).forEach(r => {
+                const trip = (appData.savedTrips || []).find(t => t.name === r.tripName) || {};
+                tbody.innerHTML += `<tr>${wrapTd(r.tripName || "")}${wrapTd(trip.mandoub || "")}${wrapTd(r.mandoubBonus || 0)}${wrapTd(r.mandoubDiscount || 0)}${wrapTd(trip.driver || "")}${wrapTd(r.driverBonus || 0)}${wrapTd(r.driverDiscount || 0)}</tr>`;
+            });
         } else if (title === "اجمالي ايرادات المندوب والسائق") {
-            thead.innerHTML = `<th>المستخدم</th><th>نوع الإيراد</th><th>المبلغ</th><th>العملة</th><th>التاريخ</th>`;
-            (appData.userIncomes || []).forEach(i => tbody.innerHTML += `<tr>${wrapTd(i.user || "")}${wrapTd(i.type || "")}${wrapTd(i.amount || 0)}${wrapTd(i.currency || "")}${wrapTd((i.date || "").split("T")[0] || "")}</tr>`);
+            thead.innerHTML = `<th>اسم الرحلة</th><th>المستخدم</th><th>نوع الإيراد</th><th>المبلغ</th><th>العملة</th><th>التاريخ</th>`;
+            (appData.userIncomes || []).forEach(i => tbody.innerHTML += `<tr>${wrapTd(i.tripName || "-")}${wrapTd(i.user || "")}${wrapTd(i.type || "")}${wrapTd(i.amount || 0)}${wrapTd(i.currency || "")}${wrapTd((i.date || "").split("T")[0] || "")}</tr>`);
         } else if (title === "عدد ايام البقاء اثناء الرحلة") {
-            thead.innerHTML = `<th>اسم الرحلة</th><th>عدد الأيام</th><th>رقم الرحلة</th>`;
-            (appData.savedTrips || []).forEach(t => tbody.innerHTML += `<tr>${wrapTd(t.name || "")}${wrapTd(t.days || 0)}${wrapTd(t.tripNumber || "")}</tr>`);
+            thead.innerHTML = `<th>اسم الرحلة</th><th>اسم المندوب</th><th>اسم السائق</th><th>رقم الرحلة</th><th>عدد الأيام</th>`;
+            (appData.savedTrips || []).forEach(t => tbody.innerHTML += `<tr>${wrapTd(t.name || "")}${wrapTd(t.mandoub || "")}${wrapTd(t.driver || "")}${wrapTd(t.tripNumber || "")}${wrapTd(t.days || 0)}</tr>`);
         } else if (title === "عدد الكيلومترات الصافي للسيارة") {
             thead.innerHTML = `<th>اسم الرحلة</th><th>الباص</th><th>قبل الرحلة</th><th>بعد العودة</th><th>الصافي</th>`;
             (appData.savedTrips || []).forEach(t => {
@@ -628,14 +745,14 @@ function setupReportsSystem() {
                 tbody.innerHTML += `<tr>${wrapTd(t.name || "")}${wrapTd(t.bus || "")}${wrapTd(before)}${wrapTd(after)}${wrapTd(after - before)}</tr>`;
             });
         } else if (title === "عدد اللترات المصروفة بالعراق") {
-            thead.innerHTML = `<th>المستخدم</th><th>اسم الرحلة</th><th>نوع المصروف</th><th>عدد اللترات</th>`;
-            (appData.userExpenses || []).forEach(e => tbody.innerHTML += `<tr>${wrapTd(e.user || "")}${wrapTd(e.tripName || "")}${wrapTd(e.type || "")}${wrapTd(e.liters || 0)}</tr>`);
+            thead.innerHTML = `<th>التاريخ</th><th>المستخدم</th><th>اسم الرحلة</th><th>نوع المصروف</th><th>عدد اللترات</th>`;
+            (appData.userExpenses || []).forEach(e => tbody.innerHTML += `<tr>${wrapTd((e.date || "").split("T")[0] || "")}${wrapTd(e.user || "")}${wrapTd(e.tripName || "")}${wrapTd(e.type || "")}${wrapTd(e.liters || 0)}</tr>`);
         } else if (title === "تقرير مصرف الرحلة") {
-            thead.innerHTML = `<th>المستخدم</th><th>اسم الرحلة</th><th>المبلغ</th><th>النوع</th><th>التاريخ</th><th>الصورة</th>`;
-            (appData.userExpenses || []).forEach(e => tbody.innerHTML += `<tr>${wrapTd(e.user || "")}${wrapTd(e.tripName || "")}${wrapTd((e.amount || 0) + " " + (e.currency || ""))}${wrapTd(e.type || "")}${wrapTd((e.date || "").split("T")[0] || "")}${wrapTd(e.imgBase64 ? `<img src="${e.imgBase64}" class="clickable-image" onclick="openImage('${e.imgBase64}')">` : "لا يوجد")}</tr>`);
+            thead.innerHTML = `<th>المستخدم</th><th>اسم الرحلة</th><th>المبلغ</th><th>النوع</th><th>التاريخ</th><th class="hide-on-pdf">الصورة</th>`;
+            (appData.userExpenses || []).forEach(e => tbody.innerHTML += `<tr>${wrapTd(e.user || "")}${wrapTd(e.tripName || "")}${wrapTd((e.amount || 0) + " " + (e.currency || ""))}${wrapTd(e.type || "")}${wrapTd((e.date || "").split("T")[0] || "")}<td class="hide-on-pdf" style="padding: 12px; border: 1px solid rgba(255,255,255,0.3);">${e.imgBase64 ? `<img src="${e.imgBase64}" class="clickable-image" onclick="openImage('${e.imgBase64}')">` : "لا يوجد"}</td></tr>`);
         } else if (title === "تقرير أعطال الصيانة") {
-            thead.innerHTML = `<th>المستخدم</th><th>اسم الرحلة</th><th>الباص</th><th>المبلغ</th><th>الخيار</th><th>التاريخ</th><th>الصورة</th>`;
-            (appData.userBusExpenses || []).forEach(e => tbody.innerHTML += `<tr>${wrapTd(e.user || "")}${wrapTd(e.tripName || "")}${wrapTd(e.car || "")}${wrapTd((e.amount || 0) + " " + (e.currency || ""))}${wrapTd(e.opts || "")}${wrapTd(e.date || "")}${wrapTd(e.imgBase64 ? `<img src="${e.imgBase64}" class="clickable-image" onclick="openImage('${e.imgBase64}')">` : "لا يوجد")}</tr>`);
+            thead.innerHTML = `<th>المستخدم</th><th>اسم الرحلة</th><th>الباص</th><th>المبلغ</th><th>الخيار</th><th>التاريخ</th><th class="hide-on-pdf">الصورة</th>`;
+            (appData.userBusExpenses || []).forEach(e => tbody.innerHTML += `<tr>${wrapTd(e.user || "")}${wrapTd(e.tripName || "")}${wrapTd(e.car || "")}${wrapTd((e.amount || 0) + " " + (e.currency || ""))}${wrapTd(e.opts || "")}${wrapTd((e.date || "").split("T")[0] || "")}<td class="hide-on-pdf" style="padding: 12px; border: 1px solid rgba(255,255,255,0.3);">${e.imgBase64 ? `<img src="${e.imgBase64}" class="clickable-image" onclick="openImage('${e.imgBase64}')">` : "لا يوجد"}</td></tr>`);
         }
 
         if (tbody.innerHTML === "") tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;">لا توجد بيانات</td></tr>`;
@@ -656,9 +773,11 @@ function setupReportsSystem() {
     window.exportReportExcel = () => {
         const csv = [];
         document.querySelectorAll("#report-table tr").forEach(row => {
-            const rowData = [];
-            row.querySelectorAll("td, th").forEach(col => rowData.push(col.innerText.replace(/(\r\n|\n|\r)/gm, "").replace(/,/g, "")));
-            csv.push(rowData.join(","));
+            if(row.style.display !== 'none') {
+                const rowData = [];
+                row.querySelectorAll("td:not(.hide-on-pdf), th:not(.hide-on-pdf)").forEach(col => rowData.push(`"${col.innerText.replace(/(\r\n|\n|\r)/gm, "").replace(/"/g, '""')}"`));
+                csv.push(rowData.join(","));
+            }
         });
         const link = document.createElement("a");
         link.setAttribute("href", encodeURI("data:text/csv;charset=utf-8,\uFEFF" + csv.join("\n")));
@@ -666,6 +785,48 @@ function setupReportsSystem() {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+    };
+
+    // تقنية معالجة الجدول وتحويله لـ PDF بخلفية بيضاء وبدون صور مكسورة
+    window.exportReportPDF = () => {
+        const table = document.getElementById("report-table");
+        if(table.rows.length <= 1) { showCustomAlert("لا توجد بيانات للتصدير"); return; }
+
+        const clone = table.cloneNode(true);
+        clone.style.color = "black";
+        clone.style.backgroundColor = "white";
+        clone.style.direction = "rtl";
+        clone.querySelectorAll("th, td").forEach(cell => {
+            cell.style.color = "black";
+            cell.style.border = "1px solid black";
+        });
+        
+        clone.querySelectorAll(".hide-on-pdf").forEach(el => el.remove());
+
+        const container = document.createElement("div");
+        container.style.padding = "20px";
+        container.style.backgroundColor = "white";
+        container.dir = "rtl";
+        
+        const title = document.createElement("h2");
+        title.textContent = $("report-title").textContent;
+        title.style.color = "black";
+        title.style.textAlign = "center";
+        title.style.marginBottom = "20px";
+        title.style.fontFamily = "Arial, sans-serif";
+        
+        container.appendChild(title);
+        container.appendChild(clone);
+        
+        const opt = {
+            margin:       0.5,
+            filename:     $("report-title").textContent + '.pdf',
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true },
+            jsPDF:        { unit: 'in', format: 'a4', orientation: 'landscape' }
+        };
+        
+        html2pdf().set(opt).from(container).save();
     };
 }
 
