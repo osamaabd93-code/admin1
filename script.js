@@ -16,7 +16,7 @@ const db = getFirestore(app);
 let appData = {
     drivers: [], mandoubs: [], buses: [], accountants: [], expenseTypes: [], busExpenseOptions: [],
     users: [], savedTrips: [], savedTripsInfo: [], tasks: [], returnInfos: [],
-    busFunds: {}, userExpenses: [], userIncomes: [], userBusExpenses: [], finances: []
+    busFunds: {}, userExpenses: [], userIncomes: [], userBusExpenses: [], finances: [], busTransfers: []
 };
 
 const $ = (id) => document.getElementById(id);
@@ -85,7 +85,7 @@ function listenToDB() {
             appData = {
                 drivers: [], mandoubs: [], buses: [], accountants: [], expenseTypes: [], busExpenseOptions: [],
                 users: [], savedTrips: [], savedTripsInfo: [], tasks: [], returnInfos: [],
-                busFunds: {}, userExpenses: [], userIncomes: [], userBusExpenses: [], finances: [],
+                busFunds: {}, userExpenses: [], userIncomes: [], userBusExpenses: [], finances: [], busTransfers: [],
                 ...incoming
             };
             refreshAllUI();
@@ -234,13 +234,26 @@ function generateBusFunds() {
         }
     });
 
+    (appData.busTransfers || []).forEach(tr => {
+        if (tr.bus && dynamicBusFunds[tr.bus]) {
+            dynamicBusFunds[tr.bus].out += Number(tr.amount) || 0;
+        }
+    });
+
+    appData.busFundsCalc = dynamicBusFunds;
+
     grid.innerHTML = (appData.buses || []).map(bus => {
         const fund = dynamicBusFunds[bus] || { in: 0, out: 0, trans: 0 };
+        const net = fund.in - fund.out;
         return `
-            <div class="stat-card glass-panel">
+            <div class="stat-card glass-panel" style="position: relative;">
                 <i class="fas fa-bus" style="color: #60a5fa; font-size: 1.5rem;"></i>
                 <h4 class="glass-text" style="font-size: 0.9rem; margin: 5px 0;">${bus}</h4>
-                <div class="fund-details glass-inner"><span>و: ${fund.in}</span> | <span>ص: ${fund.out}</span></div>
+                <div class="fund-details glass-inner" style="margin-bottom: 10px;">
+                    <span>و: ${fund.in}</span> | <span>ص: ${fund.out}</span>
+                    <div style="margin-top: 5px; color: ${net >= 0 ? '#6ee7b7' : '#fca5a5'};">الصافي: ${net}</div>
+                </div>
+                ${net > 0 ? `<button onclick="zeroBusFund('${bus}')" class="glass-btn" style="width: 100%; padding: 5px; font-size: 0.8rem; background: rgba(16, 185, 129, 0.4) !important; margin-top: 5px;">تصفير وتحويل للصندوق العام</button>` : `<button disabled class="glass-btn" style="width: 100%; padding: 5px; font-size: 0.8rem; opacity: 0.5; margin-top: 5px;">مصفر</button>`}
             </div>`;
     }).join("");
     
@@ -265,6 +278,22 @@ function generateBusFunds() {
     if ($("profit-in")) $("profit-in").textContent = profitIn;
     if ($("profit-out")) $("profit-out").textContent = profitOut;
 }
+
+window.zeroBusFund = (bus) => {
+    const fund = appData.busFundsCalc ? appData.busFundsCalc[bus] : null;
+    if(!fund) return;
+    const net = fund.in - fund.out;
+    if(net <= 0) {
+        showCustomAlert("الصندوق مصفر أو سالب بالفعل");
+        return;
+    }
+    if(confirm(`هل أنت متأكد من تصفير صندوق باص ${bus} وتحويل مبلغه (${net}) للصندوق العام؟`)) {
+        if(!appData.busTransfers) appData.busTransfers = [];
+        appData.busTransfers.push({ bus, amount: net, date: new Date().toISOString() });
+        saveToDB();
+        showCustomAlert("تم تصفير الصندوق بنجاح");
+    }
+};
 
 function setupCalculationsAndInteractions() {
     const calc = (totalId, paidId, remId) => {
@@ -797,8 +826,9 @@ function setupReportsSystem() {
         clone.style.backgroundColor = "white";
         clone.style.direction = "rtl";
         clone.querySelectorAll("th, td").forEach(cell => {
-            cell.style.color = "black";
-            cell.style.border = "1px solid black";
+            cell.style.setProperty("color", "black", "important");
+            cell.style.setProperty("border", "1px solid black", "important");
+            cell.style.setProperty("background-color", "white", "important");
         });
         
         clone.querySelectorAll(".hide-on-pdf").forEach(el => el.remove());
