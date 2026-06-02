@@ -869,3 +869,44 @@ function addWallet(user,iqd,usd,sar){
   appData.wallets[user].sar += Number(sar)||0;
   saveToDB();
 }
+
+// --- PWA Installation & Service Worker Logic ---
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(err => {
+            console.log('Service Worker registration failed: ', err);
+        });
+    });
+}
+
+let deferredPrompt;
+const pwaInstallModal = document.getElementById('pwa-install-modal');
+const btnInstallPwa = document.getElementById('btn-install-pwa');
+const btnClosePwa = document.getElementById('btn-close-pwa');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    if (pwaInstallModal) {
+        pwaInstallModal.style.display = 'flex';
+    }
+});
+
+if (btnInstallPwa) {
+    btnInstallPwa.addEventListener('click', async () => {
+        if (pwaInstallModal) pwaInstallModal.style.display = 'none';
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            deferredPrompt = null;
+        }
+    });
+}
+
+if (btnClosePwa) {
+    btnClosePwa.addEventListener('click', () => {
+        if (pwaInstallModal) pwaInstallModal.style.display = 'none';
+    });
+}
+
+}
