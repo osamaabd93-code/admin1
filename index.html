@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>نظام إدارة النقل والرحلات - الإدارة</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1e3a8a">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -640,6 +642,18 @@
     <div id="image-modal" class="modal hidden glass-modal">
         <span class="close-modal">&times;</span>
         <img class="modal-content" id="modal-img">
+    </div>
+
+    <div id="pwa-install-modal" class="modal glass-modal" style="display: none; z-index: 3000; align-items: center; justify-content: center;">
+        <div class="modal-content glass-panel" style="text-align: center; padding: 30px; border-radius: 15px; background: rgba(0, 0, 0, 0.85); width: 90%; max-width: 400px; margin: 0 auto; border: 1px solid rgba(255,255,255,0.2);">
+            <img src="./icon-192x192.png" alt="أيقونة التطبيق" style="width: 100px; height: 100px; margin-bottom: 15px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+            <h3 class="glass-text" style="margin-bottom: 10px;">تثبيت التطبيق</h3>
+            <p style="color: #ddd; margin-bottom: 25px; line-height: 1.5; font-size: 0.95rem;">قم بتثبيت التطبيق على الشاشة الرئيسية لجهازك لسهولة الوصول والعمل في الخلفية.</p>
+            <div style="display: flex; gap: 15px; justify-content: center;">
+                <button id="btn-install-pwa" class="btn btn-primary glass-btn" style="flex: 1; padding: 10px;">تثبيت الآن</button>
+                <button id="btn-close-pwa" class="btn btn-secondary glass-btn" style="flex: 1; padding: 10px; background-color: rgba(220, 38, 38, 0.7) !important;">لاحقاً</button>
+            </div>
+        </div>
     </div>
 
     <div id="custom-alert-container" class="custom-alert-container"></div>
